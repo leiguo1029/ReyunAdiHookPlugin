@@ -4,11 +4,14 @@ import android.content.Context;
 import android.util.Log;
 
 import com.fear1ess.reyunaditool.HookEntry;
+import com.fear1ess.reyunaditool.HttpParser;
 import com.fear1ess.reyunaditool.IDoCommandService;
 import com.fear1ess.reyunaditool.OperateCmd;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -40,6 +43,21 @@ public class AdmobFinder extends Finder {
     }
 
     public void hookAdsApi() {
+        registerSSLHook(new SSLOutputStreamHookedCallback() {
+            @Override
+            public void onSSLOutputStreamHooked(HttpParser hp) {
+                if(!hp.getMethod().equals("GET") || !hp.getPath().contains("/mads/gma")) return;
+                String slotname = hp.getUrlParam("slotname");
+                String client = hp.getUrlParam("client");
+                Map<String,String> map = new HashMap<>();
+                map.put("client", client);
+                map.put("slotname", slotname);
+                uploadAdsData(map);
+            }
+        });
+
+        /*
+
         XposedHelpers.findAndHookMethod("com.google.android.gms.ads.BaseAdView", mAppClassLoader, "setAdUnitId",
                 String.class, new AdmobApiHook("bannerAd", 0));
 
@@ -50,15 +68,16 @@ public class AdmobFinder extends Finder {
                 Context.class, String.class, new AdmobApiHook("rewardedAd", 1));
 
         try {
-            /*
+
             XposedBridge.hookAllMethods(mAppClassLoader.loadClass("com.google.android.gms.ads.reward.RewardedVideoAd"), "loadAd",
-                    new AdmobApiHook("rewardedAd(legacy)", 0));*/
+                    new AdmobApiHook("rewardedAd(legacy)", 0));
 
             XposedBridge.hookAllMethods(mAppClassLoader.loadClass("import com.google.android.gms.ads.appopen.AppOpenAd"), "load",
                     new AdmobApiHook("openAd", 1));
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-
+        */
     }
+
 }
